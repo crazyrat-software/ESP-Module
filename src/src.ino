@@ -22,7 +22,7 @@ extern "C" {
 /*
      Global configuration
 */
-#define VERSION "1.2"
+#define VERSION "1.3"
 #define Update_Server "http://crazyrat.pl/esp/update.php"
 bool DEBUG = false;
 bool firstRun = false;
@@ -65,6 +65,52 @@ constexpr char ControlServersCount = sizeof(cfgControlServers) / sizeof(cfgContr
 String cfgWiFiSSIDs[5] = {""};
 String cfgWiFiPasswords[5] = {""};
 constexpr char WiFiSSIDsCount = 5;
+
+
+/*
+ *   Core functions
+ */
+void GPIOInit(bool prn = false) {
+  Serial.println("[*] Setting up GPIO");
+  for (int i = 0; i < PinsCount; i++) {
+    // ButtonFLASH nie moze pracowac jako OUTPUT aby moc wykorzystac przycisk do wlaczenia DEBUG mode
+    if (cfgPins[i] != ButtonFLASH) {
+      if (prn) {
+        Serial.print("    ");
+        tmpStr = cfgPinsLabels[i];
+        Serial.print(tmpStr);
+        for (int i = 0; i < (16 - tmpStr.length()); i++ ) {
+          Serial.print(" ");
+        }
+        Serial.print(": ");
+      }
+      if (cfgPinsMode[i] < 0) {
+        if (prn) {
+          Serial.println(ModeToString(cfgPinsMode[i]));
+        }
+      }
+      else {
+        pinMode(cfgPins[i], cfgPinsMode[i]);
+        if (prn) {
+          Serial.println(ModeToString(cfgPinsMode[i]));
+        }
+      }
+    }
+    else if (prn) {
+      Serial.print("    ");
+      tmpStr = cfgPinsLabels[i];
+      Serial.print(tmpStr);
+      for (int i = 0; i < (16 - tmpStr.length()); i++ ) {
+        Serial.print(" ");
+      }
+      Serial.print(": ");
+      Serial.println("INPUT (not configurable)");
+    }
+  }
+  pinMode(ButtonFLASH, INPUT);
+}
+
+
 
 /*
      Wireless functions
@@ -226,6 +272,8 @@ void startWebserver() {
   server.on("/getGPIO", handleGetGPIO);
   server.on("/getMode", handleGetMode);
   server.on("/getModeStr", handleGetModeStr);
+  server.on("/configReload", handleConfigReload);
+  server.on("/sysRestart", handleSysRestart);
 
   // define all /setGPIO#number#/on
   for (int i = 0; i < PinsCount; i++) {
@@ -307,6 +355,9 @@ void handleRoot() {
          "<tr><td><a href=\"/getGPIO\">getGPIO</a></td><td>Get JSON value of all GPIOs.</td></tr>"
          "<tr><td><a href=\"/getMode\">getMode</a></td><td>Get JSON mode (integer value) of all GPIOs.</td></tr>"
          "<tr><td><a href=\"/getModeStr\">getModeStr</a></td><td>Get JSON mode (string representation) of all GPIOs.</td></tr>";
+         "<tr><td><a href=\"/getModeStr\">getModeStr</a></td><td>Get JSON mode (string representation) of all GPIOs.</td></tr>";
+         "<tr><td><a href=\"/configReload\">configReload</a></td><td>Load config from config file.</td></tr>";
+         "<tr><td><a href=\"/sysRestart\">sysRestart</a></td><td>System restart</td></tr>";
 
   // setGPIO
   tmpStr = "";
@@ -510,6 +561,34 @@ void handleShowState() {
   html += analogRead(A0);
   html += "</td></tr></table>";
   server.send(200, "text/html", header() + html + footer());
+}
+
+void handleConfigReload() {
+  if (JSONLoad()) {
+    GPIOInit(true);
+    html = "{\"";
+    html += cfgMachine;
+    html += "\": \"";
+    html += cfgAPMAC;
+    html += "\", \"Result\": ";
+    html += 0;
+    html += "}";
+    server.send(200, "text/html", html);
+  }
+  else {
+    html = "{\"";
+    html += cfgMachine;
+    html += "\": \"";
+    html += cfgAPMAC;
+    html += "\", \"Result\": ";
+    html += -1;
+    html += "}";
+    server.send(200, "text/html", html);  
+  }
+}
+
+void handleSysRestart() {
+  ESP.restart();
 }
 
 void handleGetGPIO() {
@@ -762,46 +841,6 @@ const char* ResetReasonToString(char r) {
     return reasons[r];
   }
   else return reasons[2];
-}
-
-void GPIOInit(bool prn = false) {
-  Serial.println("[*] Setting up GPIO");
-  for (int i = 0; i < PinsCount; i++) {
-    // ButtonFLASH nie moze pracowac jako OUTPUT aby moc wykorzystac przycisk do wlaczenia DEBUG mode
-    if (cfgPins[i] != ButtonFLASH) {
-      if (prn) {
-        Serial.print("    ");
-        tmpStr = cfgPinsLabels[i];
-        Serial.print(tmpStr);
-        for (int i = 0; i < (16 - tmpStr.length()); i++ ) {
-          Serial.print(" ");
-        }
-        Serial.print(": ");
-      }
-      if (cfgPinsMode[i] < 0) {
-        if (prn) {
-          Serial.println(ModeToString(cfgPinsMode[i]));
-        }
-      }
-      else {
-        pinMode(cfgPins[i], cfgPinsMode[i]);
-        if (prn) {
-          Serial.println(ModeToString(cfgPinsMode[i]));
-        }
-      }
-    }
-    else if (prn) {
-      Serial.print("    ");
-      tmpStr = cfgPinsLabels[i];
-      Serial.print(tmpStr);
-      for (int i = 0; i < (16 - tmpStr.length()); i++ ) {
-        Serial.print(" ");
-      }
-      Serial.print(": ");
-      Serial.println("INPUT (not configurable)");
-    }
-  }
-  pinMode(ButtonFLASH, INPUT);
 }
 
 void checkUpdates() {
