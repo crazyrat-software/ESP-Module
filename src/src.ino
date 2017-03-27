@@ -52,7 +52,6 @@ bool tickTimer1 = false;
 bool tickTimer2 = false;
 String html = "";
 String tmpStr = "";
-
 String cfgControlServers[] = {"http://192.168.1.238/esp/register.php", "http://crazyrat.pl/esp/register.php"};
 int cfgControlServersRetryCount = 5;      //disabling after this number of retries
 int cfgControlServersRetryMinutes = 15;   //retry disabled servers (minutes)
@@ -61,11 +60,10 @@ int ControlServersStatus[] = {0, 0};
 char ControlServersIndex = 0;             //currently requested ControlServer
 char ControlServerStep = 2;               //request once per step (1s)
 constexpr char ControlServersCount = sizeof(cfgControlServers) / sizeof(cfgControlServers[0]);
-
-String cfgWiFiSSIDs[5] = {""};
-String cfgWiFiPasswords[5] = {""};
+String cfgWiFiSSIDs[5] = {"", "", "", "", ""};
+String cfgWiFiPasswords[5] = {"", "", "", "" ,""};
 constexpr char WiFiSSIDsCount = 5;
-
+constexpr int maxConfigFileSize = 1024;
 
 /*
  *   Core functions
@@ -259,7 +257,7 @@ String header() {
 }
 
 String footer() {
-  return "<br><hr><small>IoT: <strong>" + cfgAPMAC + "</strong></small>";
+  return "<br><hr><small><strong>IoT: </strong>" + cfgAPMAC + ", <strong>Kernel version: </strong>" + VERSION + "</small>";
 }
 
 void startWebserver() {
@@ -272,7 +270,8 @@ void startWebserver() {
   server.on("/getGPIO", handleGetGPIO);
   server.on("/getMode", handleGetMode);
   server.on("/getModeStr", handleGetModeStr);
-  server.on("/configReload", handleConfigReload);
+  server.on("/configLoad", handleConfigLoad);
+  server.on("/configSave", handleConfigSave);  
   server.on("/sysRestart", handleSysRestart);
 
   // define all /setGPIO#number#/on
@@ -302,7 +301,7 @@ void startWebserver() {
   for (int i = 0; i < PinsCount; i++) {
     tmpStr = "/setModeGPIO";
     tmpStr += cfgPins[i];
-    tmpStr += "/0";
+    tmpStr += "/input";
     if (DEBUG) {
       Serial.print(F("    Binding to: "));
       Serial.println(tmpStr);
@@ -313,7 +312,7 @@ void startWebserver() {
   for (int i = 0; i < PinsCount; i++) {
     tmpStr = "/setModeGPIO";
     tmpStr += cfgPins[i];
-    tmpStr += "/1";
+    tmpStr += "/output";
     if (DEBUG) {
       Serial.print(F("    Binding to: "));
       Serial.println(tmpStr);
@@ -354,22 +353,22 @@ void handleRoot() {
          "<tr><td colspan=2>JSON Methods</td></tr>"
          "<tr><td><a href=\"/getGPIO\">getGPIO</a></td><td>Get JSON value of all GPIOs.</td></tr>"
          "<tr><td><a href=\"/getMode\">getMode</a></td><td>Get JSON mode (integer value) of all GPIOs.</td></tr>"
-         "<tr><td><a href=\"/getModeStr\">getModeStr</a></td><td>Get JSON mode (string representation) of all GPIOs.</td></tr>";
-         "<tr><td><a href=\"/getModeStr\">getModeStr</a></td><td>Get JSON mode (string representation) of all GPIOs.</td></tr>";
-         "<tr><td><a href=\"/configReload\">configReload</a></td><td>Load config from config file.</td></tr>";
+         "<tr><td><a href=\"/getModeStr\">getModeStr</a></td><td>Get JSON mode (string representation) of all GPIOs.</td></tr>"
+         "<tr><td><a href=\"/configLoad\">configLoad</a></td><td>Load config from config file.</td></tr>"
+         "<tr><td><a href=\"/configSave\">configSave</a></td><td>Save config to config file.</td></tr>"
          "<tr><td><a href=\"/sysRestart\">sysRestart</a></td><td>System restart</td></tr>";
 
   // setGPIO
-  tmpStr = "";
+  tmpStr = "<tr><td colspan=2>Set GPIO Value</td></tr>";
   for (int i = 0; i < PinsCount; i++) {
     if (cfgPinsMode[i] == OUTPUT) {
-      tmpStr += "<tr><td>[";
+      tmpStr += "<tr><td>[ ";
       tmpStr += "<a href='/setGPIO";
       tmpStr += cfgPins[i];
-      tmpStr += "/off'>OFF</a>]";
+      tmpStr += "/off'>OFF</a> ][ ";
       tmpStr += "<a href='/setGPIO";
       tmpStr += cfgPins[i];
-      tmpStr += "/on'>ON</a>]";
+      tmpStr += "/on'>ON</a> ]";
       tmpStr += "</td><td>";
       tmpStr += cfgPinsLabels[i];
       tmpStr += "</td></tr>";
@@ -378,17 +377,22 @@ void handleRoot() {
   html += tmpStr;
 
   // setModeGPIO
-  tmpStr = "";
+  tmpStr = "<tr><td colspan=2>Set GPIO Mode</td></tr>";
   for (int i = 0; i < PinsCount; i++) {
     if (cfgPinsMode[i] != -1) {
-      tmpStr += "<tr><td>[";
+      tmpStr += "<tr><td>[ ";
       tmpStr += "<a href='/setModeGPIO";
       tmpStr += cfgPins[i];
-      tmpStr += "/1'>OUTPUT</a>]";
+      tmpStr += "/output'>OUTPUT</a> ][ ";
       tmpStr += "<a href='/setModeGPIO";
       tmpStr += cfgPins[i];
-      tmpStr += "/0'>INPUT</a>]";
+      tmpStr += "/input'>INPUT</a> ]";
       tmpStr += "</td><td>";
+      tmpStr += cfgPinsLabels[i];
+      tmpStr += "</td></tr>";
+    }
+    else {
+      tmpStr += "<tr><td>[ restricted ]</td><td>";
       tmpStr += cfgPinsLabels[i];
       tmpStr += "</td></tr>";
     }
@@ -506,6 +510,8 @@ void handleFileCreate() {
 void handleShowStatus() {
   html = "<h1>IoT</h1>";
   html += "<table>";
+  html += "<tr><th>Kernel version</th><td>";
+  html += VERSION;
   html += "<tr><th>Running on</th><td>";
   html += cfgMachine;
   html += "</td></tr><tr><th>Running at</th><td>";
@@ -541,7 +547,7 @@ void handleShowStatus() {
 void handleShowState() {
   tmpStr = "";
   html = "<h1>IoT</h1>";
-  html += "<table><tr><th>GPIO</th><th>Mode</th><th>Value</th></tr>";
+  html += "<table><tr><th>GPIO</th><th>Label</th><th>Mode</th><th>Value</th></tr>";
   int val = 0;
   for (int i = 0; i < PinsCount; i++) {
     if (digitalRead(cfgPins[i]) == HIGH) {
@@ -551,21 +557,46 @@ void handleShowState() {
       val = 0;
     }
     tmpStr = val;
-    html += "<tr><td>";
+    html += "<tr><td>GPIO";
+    html += cfgPins[i];
+    html += "</td><td>";
     html += cfgPinsLabels[i];
     html += "</td><td>";
     html += ModeToString(cfgPinsMode[i]);
     html += "</td><td>" + tmpStr + "</td></tr>";
   }
-  html += "<tr><td>AO</td><td>Analog INPUT</td><td>";
+  html += "<tr><td>AO</td><td>Analog</td><td>INPUT</td><td>";
   html += analogRead(A0);
   html += "</td></tr></table>";
   server.send(200, "text/html", header() + html + footer());
 }
 
-void handleConfigReload() {
+void handleConfigLoad() {
   if (JSONLoad()) {
     GPIOInit(true);
+    html = "{\"";
+    html += cfgMachine;
+    html += "\": \"";
+    html += cfgAPMAC;
+    html += "\", \"Result\": ";
+    html += 0;
+    html += "}";
+    server.send(200, "text/html", html);
+  }
+  else {
+    html = "{\"";
+    html += cfgMachine;
+    html += "\": \"";
+    html += cfgAPMAC;
+    html += "\", \"Result\": ";
+    html += -1;
+    html += "}";
+    server.send(200, "text/html", html);  
+  }
+}
+
+void handleConfigSave() {
+  if (JSONSave()) {
     html = "{\"";
     html += cfgMachine;
     html += "\": \"";
@@ -693,12 +724,14 @@ void handleGetModeStr() {
 }
 
 void handleSetMode() {
-  Serial.println(server.uri());
   int pin = getPinFromURL(server.uri(), "/setModeGPIO");
   int val = getPinModeFromURL(server.uri(), "/setModeGPIO");
 
   if (pin >= 0 and val >= 0) {
     pinMode(pin, val);
+    for (int i = 0; i < PinsCount; i++) {
+      if (cfgPins[i] == pin) { cfgPinsMode[i] = val; }
+    }
   }
   html = "{\"";
   html += cfgMachine;
@@ -708,7 +741,6 @@ void handleSetMode() {
   html += val;
   html += "}";
   server.send(200, "text/html", html);
-
 }
 #endif
 
@@ -907,15 +939,14 @@ bool JSONLoad() {
     return false;
   }
 
-  constexpr int maxCfgSize = 1024;
   size_t size = configFile.size();
-  if (size > maxCfgSize) {
+  if (size > maxConfigFileSize) {
     if (DEBUG) { Serial.println("[!] Config file size is too large"); }
     return false;
   }
   std::unique_ptr<char[]> buf(new char[size]);
   configFile.readBytes(buf.get(), size);
-  StaticJsonBuffer<maxCfgSize> jsonBuffer;
+  StaticJsonBuffer<maxConfigFileSize> jsonBuffer;
   JsonObject& json = jsonBuffer.parseObject(buf.get());
 
   if (!json.success()) {
@@ -938,12 +969,42 @@ bool JSONLoad() {
 
 bool JSONSave() {
   Serial.println("[-] Saving config file");
-  StaticJsonBuffer<200> jsonBuffer;
+  StaticJsonBuffer<maxConfigFileSize> jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
 
-  // Variable to JSON mapping
-  //json["serverName"] = "api.example.com";
-  //json["accessToken"] = "128du9as8du12eoue8da98h123ueh9h98";
+  // Variable => JSON mapping
+  json["Debug"] = DEBUG;
+  json["ControlServersRetryCount"] = cfgControlServersRetryCount;
+  json["ControlServersRetryMinutes"] = cfgControlServersRetryMinutes;
+
+  JsonArray& arr = json.createNestedArray("ControlServers");
+  for (int i = 0; i < ControlServersCount; i++) {
+    if (cfgControlServers[i].length() > 0) { arr.add(cfgControlServers[i]); }
+    else { arr.add(""); }
+  }
+  
+  JsonArray& arr2 = json.createNestedArray("WiFiSSID");
+  for (int i = 0; i < WiFiSSIDsCount; i++) {
+      if (cfgWiFiSSIDs[i].length() > 0) { arr2.add(cfgWiFiSSIDs[i]); }
+      else { arr2.add(""); }
+  }
+
+  JsonArray& arr3 = json.createNestedArray("WiFiPassword");
+  for (int i = 0; i < WiFiSSIDsCount; i++) {
+      if (cfgWiFiPasswords[i].length() > 0) { arr3.add(cfgWiFiPasswords[i]); }
+      else { arr3.add(""); }
+  }
+
+  JsonArray& arr4 = json.createNestedArray("GPIOMode");
+  for (int i = 0; i < PinsCount; i++) {
+      arr4.add(cfgPinsMode[i]);
+  }
+
+  JsonArray& arr5 = json.createNestedArray("GPIOLabels");
+  for (int i = 0; i < PinsCount; i++) {
+      if (cfgPinsLabels[i].length() > 0) { arr5.add(cfgPinsLabels[i]); }
+      else { arr5.add(""); }
+  }
 
   File configFile = SPIFFS.open("/config.json", "w");
   if (!configFile) {
