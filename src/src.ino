@@ -16,7 +16,7 @@ extern "C" {
 #include <ESP8266httpUpdate.h>
 #include <Ticker.h>
 #include <FS.h>
-#include <ESP.h>
+#include <Esp.h>
 #include <ArduinoJson.h>
 
 /*
