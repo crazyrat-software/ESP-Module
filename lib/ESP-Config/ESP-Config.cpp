@@ -7,8 +7,6 @@
      Global configuration
 */
 
-#define VERSION "1.3"
-#define Update_Server "http://crazyrat.pl/esp/update.php"
 bool DEBUG = false;
 bool firstRun = false;
 const char *cfgMachine = "ESP8266";

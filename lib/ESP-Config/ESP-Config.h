@@ -10,7 +10,7 @@
      Global configuration
 */
 
-#define VERSION "1.3"
+#define VERSION "1.4"
 #define Update_Server "http://crazyrat.pl/esp/update.php"
 extern bool DEBUG;
 extern bool firstRun;
