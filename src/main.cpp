@@ -54,7 +54,6 @@ void setup() {
   }
 
   Serial.println(F("[*] Mounting filesystem"));
-  //SPIFFS.format();
   if (SPIFFS.begin()) {
     Dir dir = SPIFFS.openDir("/");
     while (dir.next()) {
@@ -68,7 +67,6 @@ void setup() {
       Serial.println("[!] Failed to load config");
     }
   }
-
   GPIOInit(true);
 
 #if Enable_WifiClient == 1 || Enable_AccessPoint == 1
@@ -91,12 +89,13 @@ void setup() {
     Serial.println(cfgControlServers[i]);
   }
 #endif
+  checkUpdates();
 }
 
 void loop() {
+  // first run aka soft init
   if (firstRun == false) {
     firstRun = true;
-    checkUpdates();
     Serial.println(F("[*] Exec."));
     Timer0.attach_ms(cfgTimer0ms, timer0Callback);
     Timer1.attach_ms(cfgTimer1ms, timer1Callback);
@@ -104,21 +103,21 @@ void loop() {
   }
 
   // Fast timer
-  if (tickTimer1 == true) {
+  if (tickTimer0 == true) {
 #if Enable_WiFiClient == 1
     if (WiFiClientConnected) {
       digitalWrite(LED1, HIGH);
     }
 #endif
     digitalWrite(LED2, HIGH);
-    Timer1.detach();
-    tickTimer1 = false;
+    Timer0.detach();
+    tickTimer0 = false;
   }
 
   // Slow timer (1s)
-  if (tickTimer0 == true) {
+  if (tickTimer1 == true) {
     if (DEBUG) {
-      Serial.print("tick Timer0 loopCounter=");
+      Serial.print("tick Timer1 loopCounter=");
       Serial.println(loopCounter);
     }
 #if Enable_WiFiClient == 1
@@ -127,7 +126,7 @@ void loop() {
     }
 #endif
     digitalWrite(LED2, LOW);
-    Timer1.attach_ms(cfgTimer1ms, timer1Callback);
+    Timer0.attach_ms(cfgTimer1ms, timer1Callback);
 
 #if Enable_WebClient == 1
     iteration++;
@@ -136,9 +135,8 @@ void loop() {
       iteration = 0;
     }
 #endif
-
     loopCounter = 0;
-    tickTimer0 = false;
+    tickTimer1 = false;
   }
 
   // Very slow timer (60s)
@@ -149,7 +147,6 @@ void loop() {
     }
 #if Enable_WebClient == 1
     Serial.println("[-] Unregistering Control Servers");
-    //for (int i = 0; i < cfgControlServersCount; i++) { if (ControlServersStatus[i] == 1) { ControlServersStatus[i] = 0; }}
     for (auto& j : ControlServersStatus) {
       if (j == 1) {
         j = 0;
@@ -157,14 +154,13 @@ void loop() {
     }
 
     if ((sysMinutes % cfgControlServersRetryMinutes) == 0) {
+      connectWiFi();
       Serial.println("[-] Enabling Disabled Control Servers");
-      //for (int i = 0; i < cfgControlServersCount; i++) { ControlServersStatus[i] = 0; }
       for (auto& j : ControlServersStatus) {
         j = 0;
       }
     }
 #endif
-
     tickTimer2 = false;
   }
 
