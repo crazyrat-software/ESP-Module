@@ -23,19 +23,18 @@ String myPassword = "";
 bool WiFiClientConnected = false;
 
 
-
 void timer0Callback() {
   tickTimer0 = true;
+}
+
+void timer1Callback() {
+  tickTimer1 = true;
   if (sysSeconds == 59) {
     sysSeconds = 0;
   }
   else {
     sysSeconds++;
   }
-}
-
-void timer1Callback() {
-  tickTimer1 = true;
 }
 
 void timer2Callback() {

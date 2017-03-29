@@ -6,6 +6,7 @@
 #include "ESP-WiFiClient.h"
 
 void initWiFi() {
+  Serial.println("[*] Setting up Wireless client");
   cfgAPMAC = WiFi.softAPmacAddress();
   cfgClientMAC = WiFi.macAddress();
   myPassword = cfgPASSWORD;
@@ -13,26 +14,24 @@ void initWiFi() {
   myPassword.replace(":", "");
   mySSID = cfgSSID + cfgAPMAC;
   mySSID.replace(":", "-");
+  for (int i=0; i < WiFiSSIDsCount; i++) {
+    if (DEBUG) { Serial.print("    SSID: "); Serial.println(cfgWiFiSSIDs[i]); }
+    wifiMulti.addAP(cfgWiFiSSIDs[i].c_str(), cfgWiFiPasswords[i].c_str());
+  }
 }
 
 ESP8266WiFiMulti wifiMulti;
 
 void connectWiFi() {
-  Serial.println("[*] Setting up Wireless client");
-  for (int i=0; i < WiFiSSIDsCount; i++) {
-    if (DEBUG) { Serial.print("    SSID: "); Serial.println(cfgWiFiSSIDs[i]); }
-    wifiMulti.addAP(cfgWiFiSSIDs[i].c_str(), cfgWiFiPasswords[i].c_str());
-  }
-
   for (int x = 0; x < 10; x++) {
     wifiMulti.run();
-    delay(1000);
     if (WiFi.status() != WL_CONNECTED) {
       if ( x == 9) {
         Serial.println("[!] No known Wireless networks found!");
         break;
       }
-    } else {
+    }
+    else {
       WiFiClientConnected = true;
       Serial.println("[-] WiFi Connected");
       Serial.print("    SSID: ");
@@ -41,5 +40,6 @@ void connectWiFi() {
       Serial.println(WiFi.localIP());
       break;
     }
+    delay(1000);
   }
 }

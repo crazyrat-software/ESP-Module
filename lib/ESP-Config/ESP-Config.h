@@ -33,9 +33,9 @@ extern int cfgPinsMode[PinsCount];
 constexpr char LED1 = D4;
 constexpr char LED2 = D0;
 constexpr char ButtonFLASH = D3;
-constexpr uint cfgTimer0ms = 1000;       // tick every second
-constexpr uint cfgTimer1ms = 10;
-constexpr char cfgTimer2s = 60;          // tick every minute
+constexpr uint cfgTimer0ms = 10;      // tick fast
+constexpr uint cfgTimer1ms = 1000;      // tick every second
+constexpr char cfgTimer2s = 60;         // tick every minute
 extern String html;
 extern String tmpStr;
 constexpr int ControlServersCount = 2;
