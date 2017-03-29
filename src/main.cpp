@@ -126,7 +126,7 @@ void loop() {
     }
 #endif
     digitalWrite(LED2, LOW);
-    Timer0.attach_ms(cfgTimer1ms, timer1Callback);
+    Timer0.attach_ms(cfgTimer0ms, timer0Callback);
 
 #if Enable_WebClient == 1
     iteration++;
