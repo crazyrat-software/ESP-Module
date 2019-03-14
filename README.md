@@ -13,3 +13,4 @@
   - Registers up to 2 Control Servers
   - Constantly monitor health of Control Servers
 6. Predefined update server is checked during startup
+7. Blynk library support added.
