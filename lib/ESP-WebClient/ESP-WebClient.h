@@ -4,7 +4,8 @@
 extern HTTPClient WebClient;
 extern char httpcode;
 
-extern int requestURL(String url);
+extern int requestGET(String url);
+extern int requestPOST(String url, String data);
 extern void ControlServerRegister();
-
+extern void ControlServerPushData();
 #endif

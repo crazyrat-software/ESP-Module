@@ -36,4 +36,5 @@ bool assign(const JsonObject& json, const char* keyStr, int &value, int idx);
 bool JSONLoad();
 bool JSONSave();
 void GPIOInit(bool prn);
+String JSONGetGPIO();
 #endif

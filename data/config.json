@@ -2,9 +2,9 @@
   "Debug": false,
   "ControlServersRetryCount": 2,
   "ControlServersRetryMinutes": 5,
-  "ControlServers": ["http://crazyrat.pl/esp/register.php", ""],
-  "WiFiSSID": ["YOUR_SSID"],
-  "WiFiPassword": ["YOU_PASSWORD"],
+  "ControlServers": ["http://crazyrat.pl"],
+  "WiFiSSID": ["wifi_ssid"],
+  "WiFiPassword": ["wifi_password"],
   "GPIOMode": [1, 1, 1, -1, 1, 0, 0, 0, 0, -1, -1],
   "GPIOLabels": ["D0 (LED2)", "D1 Button", "D2 Buzzer", "D3 (FLASH)", "D4 (LED1)", "D5", "D6", "D7", "D8", "D9 (RX)", "D10 (TX)"]
 }

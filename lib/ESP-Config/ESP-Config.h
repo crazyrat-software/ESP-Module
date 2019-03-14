@@ -10,17 +10,18 @@
      Global configuration
 */
 
-#define VERSION "1.4"
+#define VERSION "1.5"
 #define Update_Server "http://crazyrat.pl/esp/update.php"
 extern bool DEBUG;
 extern bool firstRun;
 extern const char *cfgMachine;
 extern const char *cfgSSID;
 extern const char *cfgPASSWORD;
+extern const char *cfgBlynkAuth;
 extern const IPAddress cfgAPIP;
 extern const IPAddress cfgAPGateway;
 extern const IPAddress cfgAPMask;
-constexpr int cfgListenPort = 80;
+constexpr int cfgListenPort = 8000;
 
 // pins defined to be used on board
 constexpr int PinsCount = 11;
@@ -38,7 +39,7 @@ constexpr uint cfgTimer1ms = 1000;      // tick every second
 constexpr char cfgTimer2s = 60;         // tick every minute
 extern String html;
 extern String tmpStr;
-constexpr int ControlServersCount = 2;
+constexpr int ControlServersCount = 1;
 extern String cfgControlServers[ControlServersCount];
 extern int cfgControlServersRetryCount;      //disabling after this number of retries
 extern int cfgControlServersRetryMinutes;   //retry disabled servers (minutes)

@@ -29,7 +29,7 @@ void timer0Callback() {
 
 void timer1Callback() {
   tickTimer1 = true;
-  if (sysSeconds == 59) {
+  if (sysSeconds >= 59) {
     sysSeconds = 0;
   }
   else {
@@ -256,4 +256,32 @@ void GPIOInit(bool prn = false) {
     }
   }
   pinMode(ButtonFLASH, INPUT);
+}
+
+String JSONGetGPIO() {
+  tmpStr = "{\"";
+  tmpStr += cfgMachine;
+  tmpStr += "\": \"";
+  tmpStr += cfgAPMAC;
+  tmpStr += "\", \"GPIOCount\": ";
+  tmpStr += PinsCount;
+  tmpStr += ", \"GPIO\": {";
+  for (int i = 0; i < PinsCount; i++) {
+    tmpStr += "\"GPIO";
+    tmpStr += cfgPins[i];
+    tmpStr += "\": ";
+    if (digitalRead(cfgPins[i]) == HIGH) {
+      tmpStr += "1";
+    }
+    else {
+      tmpStr += "0";
+    }
+    if (i < (PinsCount - 1)) {
+      tmpStr += ", ";
+    }
+  }
+  tmpStr += "}, \"A0\": ";
+  tmpStr += analogRead(A0);
+  tmpStr += "}";
+  return tmpStr;
 }

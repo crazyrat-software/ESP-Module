@@ -12,17 +12,18 @@ bool firstRun = false;
 const char *cfgMachine = "ESP8266";
 const char *cfgSSID = "ESP-";
 const char *cfgPASSWORD = "P";
+const char *cfgBlynkAuth = "--put-blynk-auth-token-here--";
 const IPAddress cfgAPIP(192, 168, 128, 1);
 const IPAddress cfgAPGateway(192, 168, 128, 1);
 const IPAddress cfgAPMask(255, 255, 255, 0);
 
 String html = "";
 String tmpStr = "";
-String cfgControlServers[ControlServersCount] = {"http://192.168.1.238/esp/register.php", "http://crazyrat.pl/esp/register.php"};
-int cfgControlServersRetryCount = 5;      //disabling after this number of retries
-int cfgControlServersRetryMinutes = 15;   //retry disabled servers (minutes)
+String cfgControlServers[ControlServersCount] = {"http://crazyrat.pl"};
 // -100=disabled; <0=error registration; 0=unregistered; 1=registered
-int ControlServersStatus[ControlServersCount] = {0, 0};
+int ControlServersStatus[ControlServersCount] = {0};
+int cfgControlServersRetryCount = 2;      //disabling after this number of retries
+int cfgControlServersRetryMinutes = 20;   //retry disabled servers (minutes)
 char ControlServersIndex = 0;             //currently requested ControlServer
 char ControlServerStep = 2;               //request once per step (1s)
 String cfgWiFiSSIDs[5] = {"", "", "", "", ""};

@@ -6,11 +6,20 @@
 HTTPClient WebClient;
 char httpcode;
 
-int requestURL(String url) {
+int requestGET(String url) {
   int code;
   WebClient.begin(url);
   WebClient.setReuse(true);
   code = WebClient.GET();
+  WebClient.end();
+  return code;
+}
+
+int requestPOST(String url, String data){
+  int code;
+  WebClient.begin(url);
+  WebClient.addHeader("Content-Type", "text/plain");
+  code = WebClient.POST(data);
   WebClient.end();
   return code;
 }
@@ -23,7 +32,9 @@ void ControlServerRegister() {
   int idx = ControlServersIndex;
   for (int i = 0; i < ControlServersCount; i++) {
     if (ControlServersStatus[idx] <= 0 && ControlServersStatus[idx] != -100) {
-      WebClient.begin(cfgControlServers[idx]);
+      tmpStr = cfgControlServers[idx];
+      tmpStr += "/esp/register.php";
+      WebClient.begin(tmpStr);
       WebClient.setReuse(false);
       tmpStr = cfgMachine;
       tmpStr += "_";
@@ -61,4 +72,19 @@ void ControlServerRegister() {
     }
   }
   ControlServersIndex++;
+}
+
+
+void ControlServerPushData() {
+  for (int i = 0; i < ControlServersCount; i++) {
+      if (ControlServersStatus[i] == 1) {
+        tmpStr = cfgControlServers[i];
+        tmpStr += "/esp/esp_getGPIO.php?action=push";
+        httpcode = requestPOST(tmpStr, JSONGetGPIO());
+        if (DEBUG) {
+          Serial.print(F("[-] JSONGetGPIO: "));
+          Serial.println(tmpStr);
+        }
+      }
+  }
 }

@@ -251,11 +251,16 @@ bool handleFileRead(String path) {
       path += ".gz";
     File file = SPIFFS.open(path, "r");
     size_t sent = server.streamFile(file, contentType);
+    if (DEBUG) {
+      Serial.print(F("handleFileRead: "));
+      Serial.println(sent);
+    }
     file.close();
     return true;
   }
   else {
     handleRoot();
+    return false;
   }
   //return false;
 }
@@ -457,32 +462,7 @@ void handleSysRestart() {
 }
 
 void handleGetGPIO() {
-  html = "{\"";
-  html += cfgMachine;
-  html += "\": \"";
-  html += cfgAPMAC;
-  html += "\", \"GPIOCount\": ";
-  html += PinsCount;
-  html += ", \"GPIO\": {";
-  int val = 0;
-  for (int i = 0; i < PinsCount; i++) {
-    html += "\"GPIO";
-    html += cfgPins[i];
-    html += "\": ";
-    if (digitalRead(cfgPins[i]) == HIGH) {
-      html += "1";
-    }
-    else {
-      html += "0";
-    }
-    if (i < (PinsCount - 1)) {
-      html += ", ";
-    }
-  }
-  html += "}, \"A0\": ";
-  html += analogRead(A0);
-  html += "}";
-  server.send(200, "text/html", html);
+  server.send(200, "text/html", JSONGetGPIO());
 }
 
 void handleSetGPIO() {
@@ -511,7 +491,6 @@ void handleGetMode() {
   html += "\", \"GPIOCount\": ";
   html += PinsCount;
   html += ", \"GPIO\": {";
-  int val = 0;
   for (int i = 0; i < PinsCount; i++) {
     html += "\"GPIO";
     html += cfgPins[i];
@@ -535,7 +514,6 @@ void handleGetModeStr() {
   html += "\", \"GPIOCount\": ";
   html += PinsCount;
   html += ", \"GPIO\": {";
-  int val = 0;
   for (int i = 0; i < PinsCount; i++) {
     html += "\"GPIO";
     html += cfgPins[i];

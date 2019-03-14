@@ -2,6 +2,7 @@
 #define Enable_WiFiClient 1
 #define Enable_WebServer 1
 #define Enable_WebClient 1
+#define Enable_Blynk 1
 
 
 #include <Arduino.h>
@@ -24,7 +25,9 @@ extern "C" {
 #include <ESP-WebClient.h>
 #include <ESP-Common.h>
 #include <ESP-Config.h>
-
+#if Enable_Blynk == 1
+#include <BlynkSimpleEsp8266.h>
+#endif
 
 char iteration;
 
@@ -90,6 +93,20 @@ void setup() {
   }
 #endif
   checkUpdates();
+
+#if Enable_Blynk  == 1
+  // Change Blynk auth token in ESP-Config.cpp
+  // Change IP address and port below
+  // Have fun with Blynk support!
+  Serial.println(F("[*] Configuring Blynk framework"));
+  Blynk.config(cfgBlynkAuth, IPAddress(192,168,1,1), 80);
+  if (Blynk.connect()) {
+    Serial.println(F("[-] connected"));
+  }
+  else {
+    Serial.println(F("[!] not connected"));
+  }
+#endif
 }
 
 void loop() {
@@ -109,7 +126,6 @@ void loop() {
       digitalWrite(LED1, HIGH);
     }
 #endif
-    digitalWrite(LED2, HIGH);
     Timer0.detach();
     tickTimer0 = false;
   }
@@ -120,12 +136,13 @@ void loop() {
       Serial.print("tick Timer1 loopCounter=");
       Serial.println(loopCounter);
     }
+    ControlServerPushData();
 #if Enable_WiFiClient == 1
     if (WiFiClientConnected) {
       digitalWrite(LED1, LOW);
     }
 #endif
-    digitalWrite(LED2, LOW);
+    //digitalWrite(LED2, LOW);
     Timer0.attach_ms(cfgTimer0ms, timer0Callback);
 
 #if Enable_WebClient == 1
@@ -169,5 +186,8 @@ void loop() {
 #endif
 
   loopCounter++;
+#if Enable_Blynk == 1
+  Blynk.run();
+#endif
   delay(0);
 }
