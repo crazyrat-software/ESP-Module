@@ -19,7 +19,7 @@ const IPAddress cfgAPMask(255, 255, 255, 0);
 
 String html = "";
 String tmpStr = "";
-String cfgControlServers[ControlServersCount] = {"http://crazyrat.pl"};
+String cfgControlServers[ControlServersCount] = {"https://YOUR_SERVER_HERE"};
 // -100=disabled; <0=error registration; 0=unregistered; 1=registered
 int ControlServersStatus[ControlServersCount] = {0};
 int cfgControlServersRetryCount = 2;      //disabling after this number of retries
