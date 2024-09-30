@@ -11,7 +11,7 @@
 */
 
 #define VERSION "1.5"
-#define Update_Server "http://crazyrat.pl/esp/update.php"
+#define Update_Server "https://YOUR_SERVER_HERE/esp/update.php"
 extern bool DEBUG;
 extern bool firstRun;
 extern const char *cfgMachine;
